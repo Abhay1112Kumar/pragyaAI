@@ -49,3 +49,11 @@ data/chroma/*
 
 # Uploaded documents
 backend/data/uploads/
+
+# Generated backend data
+backend/data/chroma/
+backend/data/uploads/
+
+# Python cache
+__pycache__/
+*.py[cod]
