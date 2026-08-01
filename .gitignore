@@ -40,3 +40,12 @@ data/chroma/*
 # Database files
 *.sqlite3
 *.db
+
+
+# Environment variables
+.env
+*.env
+!.env.example
+
+# Uploaded documents
+backend/data/uploads/
