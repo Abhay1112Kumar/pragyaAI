@@ -1,7 +1,16 @@
 import { Send } from "lucide-react";
 import { useState } from "react";
 
-export default function ChatInput({ onSend, loading, initialValue = "" }) {
+import DocumentUpload from "./DocumentUpload";
+
+export default function ChatInput({
+  onSend,
+  loading,
+  initialValue = "",
+  document,
+  onDocumentUploaded,
+  onDocumentClear,
+}) {
   const [message, setMessage] = useState(initialValue);
 
   function handleSubmit(event) {
@@ -18,8 +27,16 @@ export default function ChatInput({ onSend, loading, initialValue = "" }) {
   }
 
   return (
-    <form className="chat-input-container" onSubmit={handleSubmit}>
+    <form className="chat-input-form" onSubmit={handleSubmit}>
+      <DocumentUpload
+        document={document}
+        onUploaded={onDocumentUploaded}
+        onClear={onDocumentClear}
+        disabled={loading}
+      />
+
       <textarea
+        className="chat-input"
         value={message}
         onChange={(event) => setMessage(event.target.value)}
         placeholder="Ask PragyaAI something..."

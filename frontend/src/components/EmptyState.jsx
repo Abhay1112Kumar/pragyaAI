@@ -9,7 +9,7 @@ const suggestions = [
 export default function EmptyState({ onSelect }) {
   return (
     <section className="empty-state">
-      <div className="empty-icon">
+      <div className="empty-state-icon">
         <BrainCircuit size={34} />
       </div>
 

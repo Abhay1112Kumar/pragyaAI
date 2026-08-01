@@ -11,7 +11,7 @@ from app.services.vector_store_service import vector_store_service
 
 
 router = APIRouter(
-    prefix="/documents",
+    prefix="/api/v1/documents",
     tags=["Documents"],
 )
 

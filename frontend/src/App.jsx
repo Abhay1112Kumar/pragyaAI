@@ -10,6 +10,7 @@ import "./App.css";
 
 export default function App() {
   const [messages, setMessages] = useState([]);
+  const [document, setDocument] = useState(null);
   const [loading, setLoading] = useState(false);
 
   async function handleSend(message) {
@@ -27,12 +28,16 @@ export default function App() {
     setLoading(true);
 
     try {
-      const result = await sendMessage(message);
+      const result = await sendMessage(
+        message,
+        document?.document_id ?? null,
+      );
 
       const assistantMessage = {
         id: crypto.randomUUID(),
         role: "assistant",
         content: result.response,
+        sources: result.sources || [],
       };
 
       setMessages((currentMessages) => [
@@ -48,6 +53,7 @@ export default function App() {
         id: crypto.randomUUID(),
         role: "assistant",
         content: detail,
+        sources: [],
       };
 
       setMessages((currentMessages) => [
@@ -74,6 +80,7 @@ export default function App() {
                   key={message.id}
                   role={message.role}
                   content={message.content}
+                  sources={message.sources}
                 />
               ))}
 
@@ -93,7 +100,13 @@ export default function App() {
         </section>
 
         <footer className="input-section">
-          <ChatInput onSend={handleSend} loading={loading} />
+          <ChatInput
+            onSend={handleSend}
+            loading={loading}
+            document={document}
+            onDocumentUploaded={setDocument}
+            onDocumentClear={() => setDocument(null)}
+          />
 
           <p className="footer-note">
             Running locally with Ollama and Qwen 2.5

@@ -17,7 +17,10 @@ router = APIRouter(
 )
 def chat(request: ChatRequest) -> ChatResponse:
     try:
-        result = chat_service.generate_response(request.message)
+        result = chat_service.generate_response(
+            message=request.message,
+            document_id=request.document_id,
+        )
         return ChatResponse(**result)
 
     except Exception as error:

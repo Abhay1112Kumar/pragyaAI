@@ -1,19 +1,15 @@
-import { Bot, Circle } from "lucide-react";
+import { Bot } from "lucide-react";
 
 export default function ChatHeader() {
   return (
     <header className="chat-header">
-      <div className="brand-icon">
+      <div className="header-logo">
         <Bot size={24} />
       </div>
 
-      <div className="brand-content">
+      <div className="header-content">
         <h1>PragyaAI</h1>
-
-        <div className="status">
-          <Circle size={8} fill="currentColor" />
-          <span>Local AI assistant</span>
-        </div>
+        <p>Local AI assistant with document-aware chat</p>
       </div>
     </header>
   );
