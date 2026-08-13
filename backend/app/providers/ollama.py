@@ -13,6 +13,10 @@ class OllamaProvider(BaseLLMProvider):
             temperature=0.3,
         )
 
+    @property
+    def model_name(self) -> str:
+        return settings.ollama_model
+
     def generate(self, system_prompt: str, user_message: str) -> str:
         messages = [
             SystemMessage(content=system_prompt),

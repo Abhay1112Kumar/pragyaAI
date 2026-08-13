@@ -16,5 +16,6 @@ def health() -> dict[str, str]:
         "application": settings.app_name,
         "version": settings.app_version,
         "provider": settings.llm_provider,
-        "model": settings.ollama_model,
+        "model": settings.active_model,
+        "phase": "Phase 3",
     }

@@ -1,6 +1,6 @@
-import { Bot } from "lucide-react";
+import { Bot, MessageSquarePlus } from "lucide-react";
 
-export default function ChatHeader() {
+export default function ChatHeader({ onNewChat, disabled = false }) {
   return (
     <header className="chat-header">
       <div className="header-logo">
@@ -9,8 +9,20 @@ export default function ChatHeader() {
 
       <div className="header-content">
         <h1>PragyaAI</h1>
-        <p>Local AI assistant with document-aware chat</p>
+        <p>Document-aware AI assistant</p>
       </div>
+
+      <button
+        type="button"
+        className="new-chat-button"
+        onClick={onNewChat}
+        disabled={disabled}
+        title="New chat"
+        aria-label="Start a new chat"
+      >
+        <MessageSquarePlus size={18} />
+        <span>New Chat</span>
+      </button>
     </header>
   );
 }

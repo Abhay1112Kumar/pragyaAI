@@ -5,9 +5,10 @@ const api = axios.create({
   timeout: 120000,
 });
 
-export async function sendMessage(message, documentId = null) {
+export async function sendMessage(message, conversationId, documentId = null) {
   const response = await api.post("/chat", {
     message,
+    conversation_id: conversationId,
     document_id: documentId,
   });
 

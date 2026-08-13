@@ -3,6 +3,9 @@ import { useState } from "react";
 
 import DocumentUpload from "./DocumentUpload";
 
+const DEFAULT_DOCUMENT_PROMPT =
+  "Summarize and explain this document in simple language.";
+
 export default function ChatInput({
   onSend,
   loading,
@@ -17,12 +20,14 @@ export default function ChatInput({
     event.preventDefault();
 
     const cleanedMessage = message.trim();
+    const messageToSend =
+      cleanedMessage || (document ? DEFAULT_DOCUMENT_PROMPT : "");
 
-    if (!cleanedMessage || loading) {
+    if (!messageToSend || loading) {
       return;
     }
 
-    onSend(cleanedMessage);
+    onSend(messageToSend);
     setMessage("");
   }
 
@@ -53,7 +58,7 @@ export default function ChatInput({
       <button
         type="submit"
         className="send-button"
-        disabled={!message.trim() || loading}
+        disabled={loading || (!message.trim() && !document)}
         aria-label="Send message"
       >
         <Send size={19} />

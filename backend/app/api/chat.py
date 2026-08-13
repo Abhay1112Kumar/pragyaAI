@@ -19,6 +19,7 @@ def chat(request: ChatRequest) -> ChatResponse:
     try:
         result = chat_service.generate_response(
             message=request.message,
+            conversation_id=request.conversation_id,
             document_id=request.document_id,
         )
         return ChatResponse(**result)

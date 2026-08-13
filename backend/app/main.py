@@ -9,7 +9,7 @@ from app.api.health import router as health_router
 app = FastAPI(
     title="PragyaAI API",
     description="Enterprise AI assistant backend",
-    version="0.2.0",
+    version="0.3.0",
 )
 
 app.add_middleware(
@@ -29,7 +29,8 @@ async def root() -> dict[str, int | str]:
     return {
         "name": "PragyaAI",
         "status": "running",
-        "phase": 2,
+        "version": "0.3.0",
+        "phase": 3,
     }
 
 

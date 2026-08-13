@@ -1,6 +1,7 @@
 from functools import lru_cache
 
 from app.providers.base import BaseLLMProvider
+from app.providers.gemini import GeminiProvider
 from app.providers.ollama import OllamaProvider
 from app.shared.config import settings
 
@@ -11,6 +12,9 @@ def get_llm_provider() -> BaseLLMProvider:
 
     if provider_name == "ollama":
         return OllamaProvider()
+
+    if provider_name == "gemini":
+        return GeminiProvider()
 
     raise ValueError(
         f"Unsupported LLM provider: {settings.llm_provider}"
