@@ -1,3 +1,6 @@
+import math
+import re
+from collections import Counter
 from uuid import uuid4
 
 from langchain_chroma import Chroma
@@ -11,6 +14,8 @@ from app.core.config import (
     CHUNK_OVERLAP,
     CHUNK_SIZE,
     EMBEDDING_MODEL,
+    HYBRID_CANDIDATE_MULTIPLIER,
+    HYBRID_RRF_K,
 )
 
 
@@ -71,20 +76,143 @@ class VectorStoreService:
                 "document_id": document_id,
             }
 
-        results = self.vector_store.similarity_search_with_score(
+        candidate_count = max(limit, limit * HYBRID_CANDIDATE_MULTIPLIER)
+        semantic_results = self.vector_store.similarity_search_with_score(
             query=query,
-            k=limit,
+            k=candidate_count,
             filter=search_filter,
         )
 
-        return [
+        semantic_chunks = [
             {
                 "content": document.page_content,
                 "metadata": document.metadata,
-                "score": float(score),
+                "semantic_distance": float(score),
             }
-            for document, score in results
+            for document, score in semantic_results
         ]
+
+        stored = self.vector_store._collection.get(
+            where=search_filter,
+            include=["documents", "metadatas"],
+        )
+        lexical_chunks = self._bm25_search(
+            query=query,
+            ids=stored.get("ids", []),
+            documents=stored.get("documents", []),
+            metadatas=stored.get("metadatas", []),
+            limit=candidate_count,
+        )
+
+        return self._reciprocal_rank_fusion(
+            semantic_chunks=semantic_chunks,
+            lexical_chunks=lexical_chunks,
+            limit=limit,
+        )
+
+    def _bm25_search(
+        self,
+        query: str,
+        ids: list[str],
+        documents: list[str],
+        metadatas: list[dict],
+        limit: int,
+    ) -> list[dict]:
+        query_terms = self._tokenize(query)
+        if not query_terms or not documents:
+            return []
+
+        tokenized_documents = [self._tokenize(document) for document in documents]
+        average_length = sum(map(len, tokenized_documents)) / len(tokenized_documents)
+        document_frequencies = Counter()
+        for terms in tokenized_documents:
+            document_frequencies.update(set(terms))
+
+        scored_chunks = []
+        document_count = len(documents)
+        k1 = 1.5
+        b = 0.75
+
+        for chunk_id, content, metadata, terms in zip(
+            ids, documents, metadatas, tokenized_documents
+        ):
+            frequencies = Counter(terms)
+            score = 0.0
+            for term in query_terms:
+                frequency = frequencies[term]
+                if not frequency:
+                    continue
+                document_frequency = document_frequencies[term]
+                inverse_document_frequency = math.log(
+                    1 + (document_count - document_frequency + 0.5)
+                    / (document_frequency + 0.5)
+                )
+                length_normalization = 1 - b
+                if average_length:
+                    length_normalization += b * len(terms) / average_length
+                score += inverse_document_frequency * (
+                    frequency * (k1 + 1)
+                    / (frequency + k1 * length_normalization)
+                )
+
+            if score > 0:
+                chunk_metadata = dict(metadata or {})
+                chunk_metadata.setdefault("chunk_id", chunk_id)
+                scored_chunks.append(
+                    {
+                        "content": content,
+                        "metadata": chunk_metadata,
+                        "bm25_score": score,
+                    }
+                )
+
+        return sorted(
+            scored_chunks,
+            key=lambda chunk: chunk["bm25_score"],
+            reverse=True,
+        )[:limit]
+
+    def _reciprocal_rank_fusion(
+        self,
+        semantic_chunks: list[dict],
+        lexical_chunks: list[dict],
+        limit: int,
+    ) -> list[dict]:
+        fused: dict[str, dict] = {}
+
+        for method, chunks in (
+            ("semantic", semantic_chunks),
+            ("bm25", lexical_chunks),
+        ):
+            for rank, chunk in enumerate(chunks, start=1):
+                chunk_id = self._chunk_key(chunk)
+                entry = fused.setdefault(
+                    chunk_id,
+                    {
+                        "content": chunk["content"],
+                        "metadata": chunk["metadata"],
+                        "score": 0.0,
+                        "retrieval_methods": [],
+                    },
+                )
+                entry["score"] += 1 / (HYBRID_RRF_K + rank)
+                entry["retrieval_methods"].append(method)
+
+        return sorted(
+            fused.values(),
+            key=lambda chunk: chunk["score"],
+            reverse=True,
+        )[:limit]
+
+    def _chunk_key(self, chunk: dict) -> str:
+        metadata = chunk["metadata"]
+        return str(
+            metadata.get("chunk_id")
+            or f"{metadata.get('document_id')}:{metadata.get('chunk_index')}"
+        )
+
+    def _tokenize(self, text: str) -> list[str]:
+        return re.findall(r"[a-z0-9]+", text.lower())
 
     def delete_document(self, document_id: str) -> int:
         collection = self.vector_store._collection

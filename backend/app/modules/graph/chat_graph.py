@@ -287,6 +287,7 @@ class PragyaChatGraph:
                     "page": metadata.get("page"),
                     "chunk_index": metadata.get("chunk_index"),
                     "score": chunk["score"],
+                    "retrieval_methods": chunk.get("retrieval_methods", []),
                 }
             )
 

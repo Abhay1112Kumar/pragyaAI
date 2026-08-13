@@ -16,6 +16,8 @@ CHROMA_COLLECTION_NAME = "pragya_documents"
 CHUNK_SIZE = 1000
 CHUNK_OVERLAP = 200
 DEFAULT_RETRIEVAL_COUNT = 4
+HYBRID_CANDIDATE_MULTIPLIER = 3
+HYBRID_RRF_K = 60
 
 UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 CHROMA_DIR.mkdir(parents=True, exist_ok=True)

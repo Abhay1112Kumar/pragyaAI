@@ -4,7 +4,20 @@ PragyaAI
 PragyaAI is a local-first AI assistant with PDF-aware chat. The backend is a
 FastAPI application, the frontend is a Vite/React app, and Phase 3 introduces
 LangGraph orchestration with short-term conversation memory. Phase 4 adds MCP
-tool discovery and execution.
+tool discovery and execution. Phase 5 adds hybrid document retrieval.
+
+Phase 5
+-------
+
+Phase 5 combines BM25 keyword retrieval with ChromaDB semantic vector search.
+Each query collects candidates from both retrievers and merges their rankings
+with Reciprocal Rank Fusion (RRF). This lets exact names, identifiers, and
+technical terms compete fairly with passages that match the query's meaning.
+
+Hybrid retrieval is used by both `POST /api/v1/documents/search` and the
+LangGraph `retrieve_document` node. Results include a fused relevance `score`
+and `retrieval_methods` showing whether a chunk was found by `semantic`,
+`bm25`, or both. Existing document filters are applied to both retrievers.
 
 Phase 4
 -------

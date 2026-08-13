@@ -81,6 +81,7 @@ async def search_documents(
                 content=result["content"],
                 metadata=result["metadata"],
                 score=result["score"],
+                retrieval_methods=result.get("retrieval_methods", []),
             )
             for result in results
         ],

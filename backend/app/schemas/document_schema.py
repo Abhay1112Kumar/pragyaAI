@@ -31,6 +31,7 @@ class RetrievedChunk(BaseModel):
     content: str
     metadata: dict[str, Any]
     score: float | None = None
+    retrieval_methods: list[str] = Field(default_factory=list)
 
 
 class DocumentSearchResponse(BaseModel):
