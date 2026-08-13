@@ -3,7 +3,33 @@ PragyaAI
 
 PragyaAI is a local-first AI assistant with PDF-aware chat. The backend is a
 FastAPI application, the frontend is a Vite/React app, and Phase 3 introduces
-LangGraph orchestration with short-term conversation memory.
+LangGraph orchestration with short-term conversation memory. Phase 4 adds MCP
+tool discovery and execution.
+
+Phase 4
+-------
+
+Phase 4 connects PragyaAI to MCP servers over JSON-RPC. A built-in
+`workspace` server is available automatically at
+`POST /api/v1/mcp/protocol`. It is restricted to this repository and exposes
+`list_files`, `read_file`, `search_code`, and read-only `git_status`.
+
+Discover tools with `GET /api/v1/mcp/tools`. Execute a tool through the chat
+graph using an explicit, auditable command:
+
+```text
+/tool workspace.search_code {"query":"LangGraph"}
+```
+
+Tool commands are routed to the new `mcp_tool` LangGraph node. The endpoint
+supports `initialize`, `tools/list`, and `tools/call`; the client uses the tool
+methods for discovery and execution,
+surfaces connection and protocol errors safely, and never sends MCP output
+through the LLM. General chat and document RAG behavior remain unchanged.
+
+Additional HTTP MCP servers can replace or extend the default through
+`MCP_SERVERS_JSON`, for example
+`{"workspace":"http://127.0.0.1:8000/api/v1/mcp/protocol","other":"http://127.0.0.1:9000/mcp"}`.
 
 Phase 3
 -------

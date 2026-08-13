@@ -1,3 +1,4 @@
+import json
 import logging
 from typing import Annotated, Literal, TypedDict
 
@@ -8,13 +9,15 @@ from langgraph.graph.message import add_messages
 
 from app.core.config import DEFAULT_RETRIEVAL_COUNT
 from app.modules.chat.prompts import SYSTEM_PROMPT
+from app.modules.mcp.client import MCPError
+from app.modules.mcp.service import mcp_service
 from app.providers.factory import get_llm_provider
 from app.services.vector_store_service import vector_store_service
 
 
 logger = logging.getLogger(__name__)
 
-Route = Literal["general", "document_rag"]
+Route = Literal["general", "document_rag", "mcp_tool"]
 
 
 class ChatGraphState(TypedDict):
@@ -72,6 +75,7 @@ class PragyaChatGraph:
         workflow.add_node("general_chat", self._general_chat)
         workflow.add_node("retrieve_document", self._retrieve_document)
         workflow.add_node("rag_answer", self._rag_answer)
+        workflow.add_node("mcp_tool", self._mcp_tool)
 
         workflow.set_entry_point("router")
         workflow.add_conditional_edges(
@@ -80,16 +84,23 @@ class PragyaChatGraph:
             {
                 "general": "general_chat",
                 "document_rag": "retrieve_document",
+                "mcp_tool": "mcp_tool",
             },
         )
         workflow.add_edge("retrieve_document", "rag_answer")
         workflow.add_edge("general_chat", END)
         workflow.add_edge("rag_answer", END)
+        workflow.add_edge("mcp_tool", END)
 
         return workflow.compile(checkpointer=self.checkpointer)
 
     def _route(self, state: ChatGraphState) -> dict:
-        route: Route = "document_rag" if state.get("document_id") else "general"
+        if mcp_service.is_tool_command(state["query"]):
+            route: Route = "mcp_tool"
+        elif state.get("document_id"):
+            route = "document_rag"
+        else:
+            route = "general"
 
         logger.info(
             "Chat graph routed conversation_id=%s route=%s document_id=%s",
@@ -107,6 +118,24 @@ class PragyaChatGraph:
 
     def _select_route(self, state: ChatGraphState) -> Route:
         return state["route"]
+
+    def _mcp_tool(self, state: ChatGraphState) -> dict:
+        try:
+            result = mcp_service.execute_message(state["query"])
+            answer = json.dumps(result, indent=2, ensure_ascii=False)
+        except MCPError as error:
+            answer = f"MCP tool call failed: {error}"
+
+        logger.info(
+            "Chat graph executed MCP tool conversation_id=%s",
+            state["conversation_id"],
+        )
+        return {
+            "answer": answer,
+            "messages": [AIMessage(content=answer)],
+            "retrieved_context": [],
+            "sources": [],
+        }
 
     def _general_chat(self, state: ChatGraphState) -> dict:
         provider = get_llm_provider()
