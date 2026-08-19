@@ -93,6 +93,21 @@ class ConversationMemoryStore:
         return cursor.rowcount
 
 
+    def stats(self) -> dict[str, int]:
+        with self._lock:
+            row = self._connection.execute(
+                """
+                SELECT
+                    COUNT(*) AS messages,
+                    COUNT(DISTINCT conversation_id) AS conversations
+                FROM conversation_messages
+                """
+            ).fetchone()
+        return {
+            "messages": int(row["messages"]),
+            "conversations": int(row["conversations"]),
+        }
+
     def close(self) -> None:
         with self._lock:
             self._connection.close()

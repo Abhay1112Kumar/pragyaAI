@@ -1,10 +1,12 @@
 from collections.abc import Iterator
 from queue import Queue
 from threading import Thread
+from time import perf_counter
 
 from app.modules.chat.streaming import capture_tokens
 from app.providers.factory import get_llm_provider
 from app.modules.graph import pragya_chat_graph
+from app.services.metrics_service import usage_metrics_store
 from app.shared.config import settings
 
 
@@ -22,12 +24,31 @@ class ChatService:
             if user_id
             else conversation_id
         )
-        result = pragya_chat_graph.invoke(
-            query=message,
-            conversation_id=memory_conversation_id,
-            document_id=document_id,
-            owner_id=user_id,
-        )
+        started_at = perf_counter()
+        try:
+            result = pragya_chat_graph.invoke(
+                query=message,
+                conversation_id=memory_conversation_id,
+                document_id=document_id,
+                owner_id=user_id,
+            )
+        except Exception:
+            if user_id:
+                usage_metrics_store.record_chat(
+                    user_id=user_id,
+                    route="error",
+                    duration_ms=(perf_counter() - started_at) * 1000,
+                    success=False,
+                )
+            raise
+
+        if user_id:
+            usage_metrics_store.record_chat(
+                user_id=user_id,
+                route=result["route"],
+                duration_ms=(perf_counter() - started_at) * 1000,
+                success=True,
+            )
 
         return {
             "response": result["answer"],

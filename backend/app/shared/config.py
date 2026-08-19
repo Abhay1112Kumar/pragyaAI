@@ -9,7 +9,7 @@ load_dotenv()
 
 class Settings:
     app_name: str = os.getenv("APP_NAME", "PragyaAI")
-    app_version: str = os.getenv("APP_VERSION", "0.8.0")
+    app_version: str = os.getenv("APP_VERSION", "0.9.0")
 
     auth_secret_key: str = os.getenv(
         "AUTH_SECRET_KEY",

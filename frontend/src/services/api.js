@@ -129,4 +129,14 @@ export async function uploadDocument(file, onUploadProgress) {
   return response.data;
 }
 
+export async function fetchAdminMetrics() {
+  const response = await api.get("/admin/metrics");
+  return response.data;
+}
+
+export async function runRetrievalEvaluation(payload) {
+  const response = await api.post("/admin/evaluations/retrieval", payload);
+  return response.data;
+}
+
 export default api;

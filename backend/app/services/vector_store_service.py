@@ -221,6 +221,21 @@ class VectorStoreService:
     def _tokenize(self, text: str) -> list[str]:
         return re.findall(r"[a-z0-9]+", text.lower())
 
+    def stats(self) -> dict[str, int]:
+        stored = self.vector_store._collection.get(
+            include=["metadatas"],
+        )
+        metadatas = stored.get("metadatas", [])
+        document_ids = {
+            metadata.get("document_id")
+            for metadata in metadatas
+            if metadata and metadata.get("document_id")
+        }
+        return {
+            "chunks": len(stored.get("ids", [])),
+            "documents": len(document_ids),
+        }
+
     def delete_document(self, document_id: str) -> int:
         collection = self.vector_store._collection
 

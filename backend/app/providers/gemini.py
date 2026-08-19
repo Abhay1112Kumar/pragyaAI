@@ -21,7 +21,7 @@ class GeminiProvider(BaseLLMProvider):
 
     def generate(self, system_prompt: str, user_message: str) -> str:
         response = self.client.generate_content(
-            f"{system_prompt}\\n\\nUser message:\\n{user_message}",
+            f"{system_prompt}\n\nUser message:\n{user_message}",
             stream=True,
         )
         chunks: list[str] = []

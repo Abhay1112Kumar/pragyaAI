@@ -179,6 +179,21 @@ class SemanticCacheService:
         return dot_product / (first_norm * second_norm)
 
 
+    def stats(self) -> dict[str, int]:
+        with self._lock:
+            row = self._connection.execute(
+                """
+                SELECT
+                    COUNT(*) AS entries,
+                    COALESCE(SUM(hit_count), 0) AS hits
+                FROM semantic_cache_entries
+                """
+            ).fetchone()
+        return {
+            "entries": int(row["entries"]),
+            "hits": int(row["hits"]),
+        }
+
     def close(self) -> None:
         with self._lock:
             self._connection.close()

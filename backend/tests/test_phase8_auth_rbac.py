@@ -36,6 +36,32 @@ class Phase8AuthenticationTests(unittest.TestCase):
         self.assertEqual(second.status_code, 201)
         self.assertEqual(second.json()["user"]["role"], "user")
 
+    def test_local_password_reset_replaces_the_old_password(self):
+        self.store.create_user("karn", "forgotten-password")
+
+        user = self.store.reset_password("KARN", "new-password123")
+
+        self.assertIsNone(self.store.authenticate("karn", "forgotten-password"))
+        self.assertIsNotNone(self.store.authenticate("karn", "new-password123"))
+        self.assertEqual(user["username"], "karn")
+        with self.assertRaisesRegex(ValueError, "not found"):
+            self.store.reset_password("missing-user", "new-password123")
+
+    def test_local_vite_fallback_port_is_allowed_by_cors(self):
+        response = self.client.options(
+            "/api/v1/auth/register",
+            headers={
+                "Origin": "http://localhost:5174",
+                "Access-Control-Request-Method": "POST",
+            },
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            response.headers["access-control-allow-origin"],
+            "http://localhost:5174",
+        )
+
     def test_login_and_me_require_valid_bearer_token(self):
         self._register("abhay-user")
         login = self.client.post(
@@ -126,8 +152,13 @@ class Phase8AuthenticationTests(unittest.TestCase):
         payload = decode_access_token(token)
 
         self.assertEqual(payload["sub"], user["id"])
+        header, payload_segment, signature = token.split(".")
+        replacement = "A" if signature[0] != "A" else "B"
+        tampered = (
+            f"{header}.{payload_segment}.{replacement}{signature[1:]}"
+        )
         with self.assertRaises(TokenError):
-            decode_access_token(f"{token[:-1]}x")
+            decode_access_token(tampered)
 
 
 if __name__ == "__main__":

@@ -95,6 +95,32 @@ class UserStore:
 
         return self._public_user(row)
 
+    def reset_password(self, username: str, new_password: str) -> dict:
+        normalized_username = username.strip()
+        password_hash = bcrypt.hashpw(
+            new_password.encode("utf-8"),
+            bcrypt.gensalt(),
+        ).decode("utf-8")
+
+        with self._lock, self._connection:
+            cursor = self._connection.execute(
+                """
+                UPDATE users
+                SET password_hash = ?
+                WHERE username = ? COLLATE NOCASE
+                """,
+                (password_hash, normalized_username),
+            )
+
+        if cursor.rowcount == 0:
+            raise ValueError("User was not found.")
+
+        row = self._connection.execute(
+            "SELECT * FROM users WHERE username = ? COLLATE NOCASE",
+            (normalized_username,),
+        ).fetchone()
+        return self._public_user(row)
+
     def get_by_id(self, user_id: str) -> dict | None:
         with self._lock:
             row = self._connection.execute(
@@ -109,6 +135,23 @@ class UserStore:
             "username": row["username"],
             "role": row["role"],
             "is_active": bool(row["is_active"]),
+        }
+
+    def stats(self) -> dict[str, int]:
+        with self._lock:
+            rows = self._connection.execute(
+                """
+                SELECT role, COUNT(*) AS count
+                FROM users
+                WHERE is_active = 1
+                GROUP BY role
+                """
+            ).fetchall()
+        role_counts = {row["role"]: int(row["count"]) for row in rows}
+        return {
+            "total": sum(role_counts.values()),
+            "admins": role_counts.get("admin", 0),
+            "users": role_counts.get("user", 0),
         }
 
     def close(self) -> None:

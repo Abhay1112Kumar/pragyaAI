@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from app.api.admin import router as admin_router
 from app.api.auth import router as auth_router
 from app.api.chat import router as chat_router
 from app.api.document_routes import router as document_router
@@ -11,7 +12,7 @@ from app.api.mcp import router as mcp_router
 app = FastAPI(
     title="PragyaAI API",
     description="Enterprise AI assistant backend",
-    version="0.8.0",
+    version="0.9.0",
 )
 
 app.add_middleware(
@@ -20,6 +21,7 @@ app.add_middleware(
         "http://localhost:5173",
         "http://127.0.0.1:5173",
     ],
+    allow_origin_regex=r"^http://(localhost|127\\.0\\.0\\.1):517[3-9]$",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -31,12 +33,13 @@ async def root() -> dict[str, int | str]:
     return {
         "name": "PragyaAI",
         "status": "running",
-        "version": "0.8.0",
-        "phase": 8,
+        "version": "0.9.0",
+        "phase": 9,
     }
 
 
 app.include_router(auth_router)
+app.include_router(admin_router)
 app.include_router(document_router)
 app.include_router(chat_router)
 app.include_router(health_router)

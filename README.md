@@ -4,7 +4,28 @@ PragyaAI
 PragyaAI is a local-first AI assistant with PDF-aware chat. The backend is a
 FastAPI application, the frontend is a Vite/React app, and Phase 3 introduces
 LangGraph orchestration with short-term conversation memory. Phase 4 adds MCP
-tool discovery and execution. Phase 5 adds hybrid document retrieval, and Phase 6\nstreams responses to the UI in real time.
+tool discovery and execution. Phase 5 adds hybrid document retrieval. Phase 6
+streams responses, Phase 7 adds durable memory and caching, Phase 8 adds access
+control, and Phase 9 adds operations metrics and RAG evaluation.
+
+Phase 9
+-------
+
+Phase 9 adds an administrator-only operations and RAG evaluation dashboard.
+Authenticated chat calls record route, latency, success, user, and timestamp in
+`backend/data/memory/metrics.sqlite3`. The dashboard combines those events with
+live counts from the user, conversation-memory, semantic-cache, and ChromaDB
+stores.
+
+`GET /api/v1/admin/metrics` reports total and 24-hour requests, average
+latency, success rate, graph-route distribution, active users, conversations,
+messages, indexed documents/chunks, cache entries, and cache hits.
+
+`POST /api/v1/admin/evaluations/retrieval` runs up to 50 test cases through
+the real Phase 5 hybrid retriever. Each case supplies a query and expected
+keywords, with an optional document ID. Results include keyword recall,
+reciprocal rank, pass/fail status, missing terms, and retrieval latency. The
+React admin dashboard exposes both the metrics and a one-case evaluation form.
 
 Phase 8
 -------

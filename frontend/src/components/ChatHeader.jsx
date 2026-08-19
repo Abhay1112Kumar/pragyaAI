@@ -1,8 +1,15 @@
-import { Bot, LogOut, MessageSquarePlus } from "lucide-react";
+import {
+  BarChart3,
+  Bot,
+  LogOut,
+  MessageSquarePlus,
+} from "lucide-react";
 
 export default function ChatHeader({
   onNewChat,
   onLogout,
+  onToggleAdmin,
+  adminOpen,
   user,
   disabled = false,
 }) {
@@ -21,6 +28,19 @@ export default function ChatHeader({
         <span>{user.username}</span>
         <small>{user.role}</small>
       </div>
+
+      {user.role === "admin" && (
+        <button
+          type="button"
+          className={"admin-toggle-button " + (adminOpen ? "active" : "")}
+          onClick={onToggleAdmin}
+          disabled={disabled}
+          title="Administration dashboard"
+          aria-label="Toggle administration dashboard"
+        >
+          <BarChart3 size={18} />
+        </button>
+      )}
 
       <button
         type="button"

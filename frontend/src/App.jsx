@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 
+import AdminDashboard from "./components/AdminDashboard";
 import AuthScreen from "./components/AuthScreen";
 import ChatHeader from "./components/ChatHeader";
 import ChatInput from "./components/ChatInput";
@@ -150,6 +151,7 @@ const initialConversation = readStoredConversation();
 
 export default function App() {
   const [auth, setAuth] = useState(initialAuth);
+  const [adminOpen, setAdminOpen] = useState(false);
   const [messages, setMessages] = useState(
     () => initialConversation?.messages ?? [],
   );
@@ -178,6 +180,7 @@ export default function App() {
   function handleLogout() {
     setAccessToken(null);
     setAuth(null);
+    setAdminOpen(false);
     setMessages([]);
     setDocument(null);
     globalThis.localStorage?.removeItem(AUTH_STORAGE_KEY);
@@ -185,6 +188,7 @@ export default function App() {
   }
 
   function handleNewChat() {
+    setAdminOpen(false);
     const nextConversationId = createConversationId();
 
     setMessages([]);
@@ -303,12 +307,16 @@ export default function App() {
         <ChatHeader
           onNewChat={handleNewChat}
           onLogout={handleLogout}
+          onToggleAdmin={() => setAdminOpen((current) => !current)}
+          adminOpen={adminOpen}
           user={auth.user}
           disabled={loading}
         />
 
         <section className="messages-container">
-          {messages.length === 0 ? (
+          {adminOpen ? (
+            <AdminDashboard />
+          ) : messages.length === 0 ? (
             <EmptyState onSelect={handleSend} />
           ) : (
             <div className="messages-list">
@@ -324,7 +332,7 @@ export default function App() {
           )}
         </section>
 
-        <footer className="input-section">
+        {!adminOpen && <footer className="input-section">
           <ChatInput
             key={conversationId}
             onSend={handleSend}
@@ -337,7 +345,7 @@ export default function App() {
           <p className="footer-note">
             Using the configured AI provider
           </p>
-        </footer>
+        </footer>}
       </main>
     </div>
   );

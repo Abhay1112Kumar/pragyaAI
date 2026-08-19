@@ -19,9 +19,17 @@ export default function AuthScreen({ onAuthenticated }) {
       const result = await authenticate(mode, username, password);
       onAuthenticated(result);
     } catch (requestError) {
+      const serverMessage = requestError.response?.data?.detail;
+      const networkMessage =
+        "Cannot reach the PragyaAI backend. Check that FastAPI is running and retry.";
+      const authenticationMessage =
+        mode === "login"
+          ? "Authentication failed. Check your username and password."
+          : "Account creation failed. Please check the details and retry.";
+
       setError(
-        requestError.response?.data?.detail ||
-          "Authentication failed. Check your username and password.",
+        serverMessage ||
+          (requestError.request ? networkMessage : authenticationMessage),
       );
     } finally {
       setSubmitting(false);
