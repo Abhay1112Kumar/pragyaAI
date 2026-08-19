@@ -8,6 +8,7 @@ from app.modules.evaluation.schemas import (
 )
 from app.modules.evaluation.service import retrieval_evaluation_service
 from app.modules.memory.store import conversation_memory_store
+from app.services.knowledge_graph_service import knowledge_graph_service
 from app.services.metrics_service import usage_metrics_store
 from app.services.semantic_cache_service import semantic_cache_service
 from app.services.vector_store_service import vector_store_service
@@ -26,6 +27,7 @@ def metrics(
         "memory": conversation_memory_store.stats(),
         "cache": semantic_cache_service.stats(),
         "documents": vector_store_service.stats(),
+        "knowledge_graph": knowledge_graph_service.stats(),
     }
 
 

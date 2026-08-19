@@ -6,7 +6,33 @@ FastAPI application, the frontend is a Vite/React app, and Phase 3 introduces
 LangGraph orchestration with short-term conversation memory. Phase 4 adds MCP
 tool discovery and execution. Phase 5 adds hybrid document retrieval. Phase 6
 streams responses, Phase 7 adds durable memory and caching, Phase 8 adds access
-control, and Phase 9 adds operations metrics and RAG evaluation.
+control, Phase 9 adds operations metrics and RAG evaluation, and Phase 10 adds
+a local knowledge graph plus production-readiness safeguards.
+
+Phase 10
+--------
+
+Phase 10 builds a user-scoped SQLite knowledge graph whenever a new PDF is
+uploaded. PragyaAI extracts explainable named and technical entities from each
+page and stores weighted co-occurrence relationships in
+`backend/data/memory/knowledge_graph.sqlite3`. Re-indexing the same document
+replaces its graph instead of creating duplicates.
+
+Authenticated users can inspect their own graph through
+`GET /api/v1/documents/graph?query=PragyaAI&document_id=<optional-id>`.
+The response contains matching entities, mention counts, related entities, and
+relationship weights. Admin metrics also report total graph entity and
+relationship counts. PDFs uploaded before Phase 10 must be uploaded again to
+populate the graph.
+
+Production readiness now includes `GET /api/v1/ready`, which checks the local
+database and provider configuration and reports whether deployment secrets have
+been replaced. The existing health endpoint remains a lightweight liveness
+check. Every HTTP response includes an `X-Request-ID` for tracing as well as
+`X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`, and
+`Cache-Control` security headers.
+
+Phase 10 raises the application version to `1.0.0`.
 
 Phase 9
 -------

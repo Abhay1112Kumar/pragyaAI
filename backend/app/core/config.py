@@ -11,6 +11,7 @@ CONVERSATION_DATABASE_PATH = MEMORY_DIR / "conversations.sqlite3"
 SEMANTIC_CACHE_DATABASE_PATH = MEMORY_DIR / "semantic_cache.sqlite3"
 AUTH_DATABASE_PATH = MEMORY_DIR / "users.sqlite3"
 METRICS_DATABASE_PATH = MEMORY_DIR / "metrics.sqlite3"
+KNOWLEDGE_GRAPH_DATABASE_PATH = MEMORY_DIR / "knowledge_graph.sqlite3"
 
 ALLOWED_FILE_TYPES = {"application/pdf"}
 MAX_FILE_SIZE = 10 * 1024 * 1024

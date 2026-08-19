@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from app.core.middleware import ProductionHeadersMiddleware
 from app.api.admin import router as admin_router
 from app.api.auth import router as auth_router
 from app.api.chat import router as chat_router
@@ -12,9 +13,10 @@ from app.api.mcp import router as mcp_router
 app = FastAPI(
     title="PragyaAI API",
     description="Enterprise AI assistant backend",
-    version="0.9.0",
+    version="1.0.0",
 )
 
+app.add_middleware(ProductionHeadersMiddleware)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
@@ -33,8 +35,8 @@ async def root() -> dict[str, int | str]:
     return {
         "name": "PragyaAI",
         "status": "running",
-        "version": "0.9.0",
-        "phase": 9,
+        "version": "1.0.0",
+        "phase": 10,
     }
 
 

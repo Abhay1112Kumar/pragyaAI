@@ -8,6 +8,7 @@ from app.schemas.document_schema import (
     RetrievedChunk,
 )
 from app.services.document_service import document_service
+from app.services.knowledge_graph_service import knowledge_graph_service
 from app.services.vector_store_service import vector_store_service
 
 
@@ -45,6 +46,7 @@ async def upload_document(
             ),
         ) from error
 
+    knowledge_graph_service.index_documents(result["documents"])
     return DocumentUploadResponse(
         message="Document uploaded, processed and indexed successfully",
         document_id=result["document_id"],
@@ -92,4 +94,19 @@ async def search_documents(
             )
             for result in results
         ],
+    )
+
+
+@router.get("/graph")
+def query_document_graph(
+    query: str,
+    document_id: str | None = None,
+    current_user: dict = Depends(get_current_user),
+) -> dict:
+    if not query.strip():
+        raise HTTPException(status_code=400, detail="Graph query cannot be empty.")
+    return knowledge_graph_service.query(
+        query=query,
+        document_id=document_id,
+        owner_id=current_user["id"],
     )
