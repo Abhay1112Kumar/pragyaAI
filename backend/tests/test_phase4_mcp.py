@@ -6,6 +6,7 @@ from pathlib import Path
 from unittest.mock import Mock, patch
 
 from app.modules.graph.chat_graph import PragyaChatGraph
+from app.modules.memory.store import ConversationMemoryStore
 from app.modules.mcp.client import MCPClient, MCPError
 from app.modules.mcp.service import MCPService
 from app.modules.mcp.server import WorkspaceMCPServer
@@ -54,7 +55,10 @@ class Phase4MCPTests(unittest.TestCase):
             self.assertIn("local", service.clients)
 
     def test_tool_command_uses_mcp_graph_route(self) -> None:
-        graph = PragyaChatGraph()
+        graph = PragyaChatGraph(
+            memory_store=ConversationMemoryStore(":memory:"),
+            semantic_cache=None,
+        )
         tool_result = {"content": [{"type": "text", "text": "42"}]}
 
         with patch(

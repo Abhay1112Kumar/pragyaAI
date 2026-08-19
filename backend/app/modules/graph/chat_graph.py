@@ -1,18 +1,28 @@
+import hashlib
 import json
 import logging
 from typing import Annotated, Literal, TypedDict
 
 from langchain_core.messages import AIMessage, BaseMessage, HumanMessage
-from langgraph.checkpoint.memory import InMemorySaver
 from langgraph.graph import END, StateGraph
 from langgraph.graph.message import add_messages
 
 from app.core.config import DEFAULT_RETRIEVAL_COUNT
 from app.modules.chat.prompts import SYSTEM_PROMPT
+from app.modules.chat.streaming import emit_token
+from app.modules.memory.store import (
+    ConversationMemoryStore,
+    conversation_memory_store,
+)
 from app.modules.mcp.client import MCPError
 from app.modules.mcp.service import mcp_service
 from app.providers.factory import get_llm_provider
+from app.services.semantic_cache_service import (
+    SemanticCacheService,
+    semantic_cache_service,
+)
 from app.services.vector_store_service import vector_store_service
+from app.shared.config import settings
 
 
 logger = logging.getLogger(__name__)
@@ -32,8 +42,13 @@ class ChatGraphState(TypedDict):
 
 
 class PragyaChatGraph:
-    def __init__(self) -> None:
-        self.checkpointer = InMemorySaver()
+    def __init__(
+        self,
+        memory_store: ConversationMemoryStore = conversation_memory_store,
+        semantic_cache: SemanticCacheService | None = semantic_cache_service,
+    ) -> None:
+        self.memory_store = memory_store
+        self.semantic_cache = semantic_cache
         self.graph = self._build_graph()
 
     def invoke(
@@ -42,8 +57,9 @@ class PragyaChatGraph:
         conversation_id: str,
         document_id: str | None = None,
     ) -> dict:
+        history = self._load_history(conversation_id)
         initial_state: ChatGraphState = {
-            "messages": [HumanMessage(content=query)],
+            "messages": [*history, HumanMessage(content=query)],
             "query": query,
             "conversation_id": conversation_id,
             "document_id": document_id,
@@ -53,13 +69,11 @@ class PragyaChatGraph:
             "answer": "",
         }
 
-        result = self.graph.invoke(
-            initial_state,
-            config={
-                "configurable": {
-                    "thread_id": conversation_id,
-                }
-            },
+        result = self.graph.invoke(initial_state)
+        self.memory_store.append_exchange(
+            conversation_id=conversation_id,
+            user_message=query,
+            assistant_message=result["answer"],
         )
 
         return {
@@ -92,7 +106,7 @@ class PragyaChatGraph:
         workflow.add_edge("rag_answer", END)
         workflow.add_edge("mcp_tool", END)
 
-        return workflow.compile(checkpointer=self.checkpointer)
+        return workflow.compile()
 
     def _route(self, state: ChatGraphState) -> dict:
         if mcp_service.is_tool_command(state["query"]):
@@ -140,9 +154,11 @@ class PragyaChatGraph:
     def _general_chat(self, state: ChatGraphState) -> dict:
         provider = get_llm_provider()
         user_message = self._build_general_prompt(state)
-        answer = provider.generate(
-            system_prompt=SYSTEM_PROMPT,
+        answer = self._generate_with_cache(
+            provider=provider,
             user_message=user_message,
+            route="general",
+            document_id=None,
         )
 
         logger.info(
@@ -192,9 +208,11 @@ class PragyaChatGraph:
 
         provider = get_llm_provider()
         user_message = self._build_rag_prompt(state)
-        answer = provider.generate(
-            system_prompt=SYSTEM_PROMPT,
+        answer = self._generate_with_cache(
+            provider=provider,
             user_message=user_message,
+            route="document_rag",
+            document_id=state.get("document_id"),
         )
 
         logger.info(
@@ -207,6 +225,89 @@ class PragyaChatGraph:
             "answer": answer,
             "messages": [AIMessage(content=answer)],
         }
+
+    def _load_history(self, conversation_id: str) -> list[BaseMessage]:
+        stored_messages = self.memory_store.load_messages(conversation_id)
+        history: list[BaseMessage] = []
+
+        for message in stored_messages:
+            message_type = (
+                AIMessage
+                if message["role"] == "assistant"
+                else HumanMessage
+            )
+            history.append(message_type(content=message["content"]))
+
+        return history
+
+    def _generate_with_cache(
+        self,
+        provider,
+        user_message: str,
+        route: Route,
+        document_id: str | None,
+    ) -> str:
+        cache_enabled = (
+            self.semantic_cache is not None
+            and provider.model_name == settings.active_model
+        )
+        namespace = self._cache_namespace(
+            route=route,
+            document_id=document_id,
+        )
+
+        if cache_enabled:
+            try:
+                cached_answer = self.semantic_cache.get(
+                    prompt=user_message,
+                    namespace=namespace,
+                )
+                if cached_answer is not None:
+                    emit_token(cached_answer)
+                    logger.info(
+                        "Semantic cache hit route=%s document_id=%s",
+                        route,
+                        document_id,
+                    )
+                    return cached_answer
+            except Exception as error:
+                logger.warning("Semantic cache lookup failed: %s", error)
+
+        answer = provider.generate(
+            system_prompt=SYSTEM_PROMPT,
+            user_message=user_message,
+        )
+
+        if cache_enabled:
+            try:
+                self.semantic_cache.put(
+                    prompt=user_message,
+                    namespace=namespace,
+                    answer=answer,
+                )
+            except Exception as error:
+                logger.warning("Semantic cache write failed: %s", error)
+
+        return answer
+
+    def _cache_namespace(
+        self,
+        route: Route,
+        document_id: str | None,
+    ) -> str:
+        system_prompt_hash = hashlib.sha256(
+            SYSTEM_PROMPT.encode("utf-8")
+        ).hexdigest()[:12]
+        return "|".join(
+            [
+                "v1",
+                settings.llm_provider,
+                settings.active_model,
+                route,
+                document_id or "no-document",
+                system_prompt_hash,
+            ]
+        )
 
     def _build_general_prompt(self, state: ChatGraphState) -> str:
         history = self._format_history(state["messages"][:-1])

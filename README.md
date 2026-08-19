@@ -6,6 +6,27 @@ FastAPI application, the frontend is a Vite/React app, and Phase 3 introduces
 LangGraph orchestration with short-term conversation memory. Phase 4 adds MCP
 tool discovery and execution. Phase 5 adds hybrid document retrieval, and Phase 6\nstreams responses to the UI in real time.
 
+Phase 7
+-------
+
+Phase 7 makes conversation memory and repeated-answer caching durable across
+backend restarts. Conversation turns are stored in
+`backend/data/memory/conversations.sqlite3` and loaded by `conversation_id`
+before each LangGraph execution. The most recent 20 messages are included to
+keep prompts bounded.
+
+A persistent semantic cache stores prompt embeddings and completed answers in
+`backend/data/memory/semantic_cache.sqlite3`. Before calling the LLM, PragyaAI
+compares the complete generated prompt with cached prompts using cosine
+similarity. A match at or above `0.92` reuses the answer and streams it through
+the Phase 6 SSE path without another LLM call.
+
+Cache entries are isolated by provider, model, graph route, document ID, and
+system-prompt version. Entries expire after seven days, and the least recently
+used entries are pruned above 500 records. If the embedding service or cache is
+unavailable, PragyaAI logs the problem and safely falls back to normal LLM
+generation.
+
 Phase 6
 -------
 
@@ -123,16 +144,16 @@ General  RAG
           Response
 ```
 
-Conversation memory is stored with LangGraph's `InMemorySaver` in this phase.
-Each request includes a `conversation_id`, which is used as the LangGraph thread
-identifier. This backend memory is process-local and resets when the backend
-restarts; it is not durable storage.
+Phase 3 originally stored conversation memory with LangGraph's
+`InMemorySaver`. Phase 7 replaces that process-local checkpoint with durable
+SQLite storage. Each request still includes a `conversation_id`, which isolates
+and restores the corresponding conversation history after backend restarts.
 
 The browser stores the active conversation ID, visible messages, and selected
 PDF metadata in `localStorage` under `pragyaai.activeConversation.v1`. This
 restores the current chat after a browser reload, including the selected
-`document_id`, but it does not persist LangGraph memory across a backend
-restart. The PDF file itself is not stored in the browser.
+`document_id`. Phase 7 independently persists backend conversation memory in
+SQLite. The PDF file itself is not stored in the browser.
 
 Starting a New Chat in the UI creates a new conversation ID, clears visible
 messages, clears the selected document, updates browser storage, and starts an

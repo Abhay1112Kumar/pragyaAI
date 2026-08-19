@@ -3,6 +3,14 @@ from unittest.mock import patch
 
 from app.modules.chat.schemas import ChatRequest
 from app.modules.graph.chat_graph import PragyaChatGraph
+from app.modules.memory.store import ConversationMemoryStore
+
+
+def create_graph() -> PragyaChatGraph:
+    return PragyaChatGraph(
+        memory_store=ConversationMemoryStore(":memory:"),
+        semantic_cache=None,
+    )
 
 
 class FakeProvider:
@@ -25,7 +33,7 @@ class Phase3GraphTests(unittest.TestCase):
 
     def test_general_route_without_document(self) -> None:
         provider = FakeProvider()
-        graph = PragyaChatGraph()
+        graph = create_graph()
 
         with patch(
             "app.modules.graph.chat_graph.get_llm_provider",
@@ -41,7 +49,7 @@ class Phase3GraphTests(unittest.TestCase):
 
     def test_document_route_reuses_existing_vector_search(self) -> None:
         provider = FakeProvider()
-        graph = PragyaChatGraph()
+        graph = create_graph()
         chunks = [
             {
                 "content": "The document explains renewable energy.",
@@ -77,7 +85,7 @@ class Phase3GraphTests(unittest.TestCase):
 
     def test_memory_is_isolated_by_conversation_id(self) -> None:
         provider = FakeProvider()
-        graph = PragyaChatGraph()
+        graph = create_graph()
 
         with patch(
             "app.modules.graph.chat_graph.get_llm_provider",
