@@ -1,5 +1,6 @@
 """Optional Google Gemini LLM provider."""
 
+from app.modules.chat.streaming import emit_token
 from app.providers.base import BaseLLMProvider
 from app.shared.config import settings
 
@@ -20,10 +21,19 @@ class GeminiProvider(BaseLLMProvider):
 
     def generate(self, system_prompt: str, user_message: str) -> str:
         response = self.client.generate_content(
-            f"{system_prompt}\n\nUser message:\n{user_message}"
+            f"{system_prompt}\\n\\nUser message:\\n{user_message}",
+            stream=True,
         )
+        chunks: list[str] = []
 
-        if response.text:
-            return response.text
+        for response_chunk in response:
+            text = response_chunk.text or ""
+            if text:
+                chunks.append(text)
+                emit_token(text)
+
+        answer = "".join(chunks)
+        if answer:
+            return answer
 
         raise RuntimeError("Gemini returned an empty response.")

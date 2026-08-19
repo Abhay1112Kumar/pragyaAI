@@ -580,3 +580,25 @@ button {
     max-width: min(280px, calc(100vw - 32px));
   }
 }
+
+.streaming-cursor {
+  width: 7px;
+  height: 17px;
+  display: inline-block;
+  vertical-align: text-bottom;
+  border-radius: 2px;
+  background: #a5b4fc;
+  animation: cursor-blink 900ms infinite;
+}
+
+@keyframes cursor-blink {
+  0%,
+  45% {
+    opacity: 1;
+  }
+
+  46%,
+  100% {
+    opacity: 0.2;
+  }
+}

@@ -1,6 +1,6 @@
 import { Bot, User } from "lucide-react";
 
-export default function ChatMessage({ role, content }) {
+export default function ChatMessage({ role, content, streaming = false }) {
   const isUser = role === "user";
 
   return (
@@ -13,7 +13,10 @@ export default function ChatMessage({ role, content }) {
 
       <div className="message-content">
         <div className={`message-bubble ${isUser ? "user-message" : "ai-message"}`}>
-          <p>{content}</p>
+          {content ? <p>{content}</p> : null}
+          {streaming && (
+            <span className="streaming-cursor" aria-label="Generating response" />
+          )}
         </div>
       </div>
 

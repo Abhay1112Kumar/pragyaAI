@@ -5,14 +5,93 @@ const api = axios.create({
   timeout: 120000,
 });
 
-export async function sendMessage(message, conversationId, documentId = null) {
-  const response = await api.post("/chat", {
-    message,
-    conversation_id: conversationId,
-    document_id: documentId,
+const API_BASE_URL = "http://127.0.0.1:8000/api/v1";
+
+export async function streamMessage(
+  message,
+  conversationId,
+  documentId = null,
+  { onToken, onMetadata } = {},
+) {
+  const response = await fetch(`${API_BASE_URL}/chat/stream`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Accept: "text/event-stream",
+    },
+    body: JSON.stringify({
+      message,
+      conversation_id: conversationId,
+      document_id: documentId,
+    }),
   });
 
-  return response.data;
+  if (!response.ok) {
+    const errorBody = await response.json().catch(() => null);
+    throw new Error(
+      errorBody?.detail || `Chat request failed (${response.status}).`,
+    );
+  }
+
+  if (!response.body) {
+    throw new Error("Streaming is not supported by this browser.");
+  }
+
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = "";
+  let metadata = null;
+
+  function processEvent(rawEvent) {
+    let eventName = "message";
+    const dataLines = [];
+
+    for (const line of rawEvent.split("\n")) {
+      if (line.startsWith("event:")) {
+        eventName = line.slice(6).trim();
+      } else if (line.startsWith("data:")) {
+        dataLines.push(line.slice(5).trimStart());
+      }
+    }
+
+    if (dataLines.length === 0) {
+      return;
+    }
+
+    const data = JSON.parse(dataLines.join("\n"));
+
+    if (eventName === "token") {
+      onToken?.(data.content ?? "");
+    } else if (eventName === "metadata") {
+      metadata = data;
+      onMetadata?.(data);
+    } else if (eventName === "error") {
+      throw new Error(data.detail || "The response stream failed.");
+    }
+  }
+
+  while (true) {
+    const { done, value } = await reader.read();
+    buffer += decoder.decode(value, { stream: !done }).replaceAll("\r\n", "\n");
+
+    const events = buffer.split("\n\n");
+    buffer = events.pop() ?? "";
+
+    for (const event of events) {
+      if (event.trim()) {
+        processEvent(event);
+      }
+    }
+
+    if (done) {
+      if (buffer.trim()) {
+        processEvent(buffer);
+      }
+      break;
+    }
+  }
+
+  return metadata;
 }
 
 export async function uploadDocument(file, onUploadProgress) {

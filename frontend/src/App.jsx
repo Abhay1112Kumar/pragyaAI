@@ -4,7 +4,7 @@ import ChatHeader from "./components/ChatHeader";
 import ChatInput from "./components/ChatInput";
 import ChatMessage from "./components/ChatMessage";
 import EmptyState from "./components/EmptyState";
-import { sendMessage } from "./services/api";
+import { streamMessage } from "./services/api";
 
 import "./App.css";
 
@@ -186,50 +186,71 @@ export default function App() {
       content: message,
     };
 
+    const assistantMessageId = createClientId("message");
+    const assistantMessage = {
+      id: assistantMessageId,
+      role: "assistant",
+      content: "",
+      streaming: true,
+    };
+
     setMessages((currentMessages) => [
       ...currentMessages,
       userMessage,
+      assistantMessage,
     ]);
-
     setLoading(true);
 
     try {
-      const result = await sendMessage(
+      const metadata = await streamMessage(
         message,
         conversationId,
         document?.document_id ?? null,
+        {
+          onToken(token) {
+            setMessages((currentMessages) =>
+              currentMessages.map((currentMessage) =>
+                currentMessage.id === assistantMessageId
+                  ? {
+                      ...currentMessage,
+                      content: currentMessage.content + token,
+                    }
+                  : currentMessage,
+              ),
+            );
+          },
+        },
       );
 
-      const assistantMessage = {
-        id: createClientId("message"),
-        role: "assistant",
-        content: result.response,
-      };
-
-      if (result.conversation_id && result.conversation_id !== conversationId) {
-        setConversationId(result.conversation_id);
+      if (
+        metadata?.conversation_id &&
+        metadata.conversation_id !== conversationId
+      ) {
+        setConversationId(metadata.conversation_id);
       }
-
-      setMessages((currentMessages) => [
-        ...currentMessages,
-        assistantMessage,
-      ]);
     } catch (error) {
       const detail =
-        error.response?.data?.detail ||
+        error.message ||
         "Unable to contact the AI service. Check that FastAPI and Ollama are running.";
 
-      const errorMessage = {
-        id: createClientId("message"),
-        role: "assistant",
-        content: detail,
-      };
-
-      setMessages((currentMessages) => [
-        ...currentMessages,
-        errorMessage,
-      ]);
+      setMessages((currentMessages) =>
+        currentMessages.map((currentMessage) =>
+          currentMessage.id === assistantMessageId
+            ? {
+                ...currentMessage,
+                content: currentMessage.content || detail,
+              }
+            : currentMessage,
+        ),
+      );
     } finally {
+      setMessages((currentMessages) =>
+        currentMessages.map((currentMessage) =>
+          currentMessage.id === assistantMessageId
+            ? { ...currentMessage, streaming: false }
+            : currentMessage,
+        ),
+      );
       setLoading(false);
     }
   }
@@ -249,20 +270,9 @@ export default function App() {
                   key={message.id}
                   role={message.role}
                   content={message.content}
+                  streaming={message.streaming}
                 />
               ))}
-
-              {loading && (
-                <div className="message-row assistant-row">
-                  <div className="message-avatar">AI</div>
-
-                  <div className="message-bubble ai-message typing-message">
-                    <span />
-                    <span />
-                    <span />
-                  </div>
-                </div>
-              )}
             </div>
           )}
         </section>

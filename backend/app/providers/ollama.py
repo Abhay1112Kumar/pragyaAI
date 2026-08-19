@@ -1,6 +1,7 @@
 from langchain_core.messages import HumanMessage, SystemMessage
 from langchain_ollama import ChatOllama
 
+from app.modules.chat.streaming import emit_token
 from app.providers.base import BaseLLMProvider
 from app.shared.config import settings
 
@@ -23,9 +24,13 @@ class OllamaProvider(BaseLLMProvider):
             HumanMessage(content=user_message),
         ]
 
-        response = self.client.invoke(messages)
+        chunks: list[str] = []
 
-        if isinstance(response.content, str):
-            return response.content
+        for response_chunk in self.client.stream(messages):
+            content = response_chunk.content
+            text = content if isinstance(content, str) else str(content)
+            if text:
+                chunks.append(text)
+                emit_token(text)
 
-        return str(response.content)
+        return "".join(chunks)

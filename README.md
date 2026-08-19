@@ -4,7 +4,29 @@ PragyaAI
 PragyaAI is a local-first AI assistant with PDF-aware chat. The backend is a
 FastAPI application, the frontend is a Vite/React app, and Phase 3 introduces
 LangGraph orchestration with short-term conversation memory. Phase 4 adds MCP
-tool discovery and execution. Phase 5 adds hybrid document retrieval.
+tool discovery and execution. Phase 5 adds hybrid document retrieval, and Phase 6\nstreams responses to the UI in real time.
+
+Phase 6
+-------
+
+Phase 6 adds real-time response streaming over Server-Sent Events (SSE).
+The React client sends chat requests to `POST /api/v1/chat/stream` and renders
+each token as Ollama or Gemini generates it, instead of waiting for the complete
+answer. The existing `POST /api/v1/chat` JSON endpoint remains available for
+backward compatibility.
+
+The stream uses named SSE events:
+
+- `token`: the next piece of generated response text.
+- `metadata`: provider, model, conversation ID, graph route, and RAG sources.
+- `done`: successful completion of the response.
+- `error`: a safe error message if generation fails after streaming begins.
+
+LangGraph remains responsible for routing, conversation memory, document RAG,
+and MCP execution. Streaming is captured inside the configured provider, so a
+streamed response is stored in the same conversation history as a normal
+response. MCP and other non-token-producing routes fall back to one complete
+`token` event followed by metadata and completion.
 
 Phase 5
 -------

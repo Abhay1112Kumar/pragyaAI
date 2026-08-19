@@ -9,7 +9,7 @@ load_dotenv()
 
 class Settings:
     app_name: str = os.getenv("APP_NAME", "PragyaAI")
-    app_version: str = os.getenv("APP_VERSION", "0.5.0")
+    app_version: str = os.getenv("APP_VERSION", "0.6.0")
 
     llm_provider: str = os.getenv("LLM_PROVIDER", "ollama")
     ollama_model: str = os.getenv("OLLAMA_MODEL", "qwen2.5:3b")
