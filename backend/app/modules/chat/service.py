@@ -14,12 +14,19 @@ class ChatService:
         message: str,
         conversation_id: str,
         document_id: str | None = None,
+        user_id: str | None = None,
     ) -> dict:
         provider = get_llm_provider()
+        memory_conversation_id = (
+            f"user:{user_id}:{conversation_id}"
+            if user_id
+            else conversation_id
+        )
         result = pragya_chat_graph.invoke(
             query=message,
-            conversation_id=conversation_id,
+            conversation_id=memory_conversation_id,
             document_id=document_id,
+            owner_id=user_id,
         )
 
         return {
@@ -36,6 +43,7 @@ class ChatService:
         message: str,
         conversation_id: str,
         document_id: str | None = None,
+        user_id: str | None = None,
     ) -> Iterator[tuple[str, dict]]:
         events: Queue[tuple[str, object]] = Queue()
 
@@ -48,6 +56,7 @@ class ChatService:
                         message=message,
                         conversation_id=conversation_id,
                         document_id=document_id,
+                        user_id=user_id,
                     )
                 events.put(("result", result))
             except Exception as error:

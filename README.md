@@ -6,6 +6,29 @@ FastAPI application, the frontend is a Vite/React app, and Phase 3 introduces
 LangGraph orchestration with short-term conversation memory. Phase 4 adds MCP
 tool discovery and execution. Phase 5 adds hybrid document retrieval, and Phase 6\nstreams responses to the UI in real time.
 
+Phase 8
+-------
+
+Phase 8 adds local authentication and role-based access control. Passwords are
+hashed with bcrypt and users are stored in `backend/data/memory/users.sqlite3`.
+Successful login or registration returns an eight-hour HS256 bearer token. Set
+strong `AUTH_SECRET_KEY` and `MCP_INTERNAL_KEY` values in `backend/.env`
+before any non-local deployment.
+
+The first registered account is bootstrapped as `admin`; later self-registered
+accounts receive the `user` role. Administrators can create users or other
+administrators through `POST /api/v1/auth/users`. The React UI now provides
+registration, sign-in, persisted sessions, role display, and sign-out.
+
+Chat and document endpoints require authentication. Conversation memory,
+semantic cache entries, and newly uploaded document chunks are scoped to the
+authenticated user. MCP discovery and tool commands require the `admin` role.
+The local workspace MCP protocol uses a separate internal key so its
+server-to-server hop does not expose an administrator token.
+
+Documents indexed before Phase 8 do not contain ownership metadata and must be
+uploaded again before authenticated document search can retrieve them.
+
 Phase 7
 -------
 
@@ -21,7 +44,7 @@ compares the complete generated prompt with cached prompts using cosine
 similarity. A match at or above `0.92` reuses the answer and streams it through
 the Phase 6 SSE path without another LLM call.
 
-Cache entries are isolated by provider, model, graph route, document ID, and
+Cache entries are isolated by provider, model, authenticated user, graph route, document ID, and
 system-prompt version. Entries expire after seven days, and the least recently
 used entries are pruned above 500 records. If the embedding service or cache is
 unavailable, PragyaAI logs the problem and safely falls back to normal LLM

@@ -1,14 +1,36 @@
 import { useEffect, useState } from "react";
 
+import AuthScreen from "./components/AuthScreen";
 import ChatHeader from "./components/ChatHeader";
 import ChatInput from "./components/ChatInput";
 import ChatMessage from "./components/ChatMessage";
 import EmptyState from "./components/EmptyState";
-import { streamMessage } from "./services/api";
+import { setAccessToken, streamMessage } from "./services/api";
 
 import "./App.css";
 
 const ACTIVE_CONVERSATION_STORAGE_KEY = "pragyaai.activeConversation.v1";
+const AUTH_STORAGE_KEY = "pragyaai.auth.v1";
+
+function readStoredAuth() {
+  try {
+    const stored = JSON.parse(
+      globalThis.localStorage?.getItem(AUTH_STORAGE_KEY) || "null",
+    );
+    if (
+      typeof stored?.access_token === "string" &&
+      typeof stored?.user?.username === "string"
+    ) {
+      return stored;
+    }
+  } catch {
+    // Invalid or unavailable local storage means the user signs in again.
+  }
+  return null;
+}
+
+const initialAuth = readStoredAuth();
+setAccessToken(initialAuth?.access_token);
 const DOCUMENT_METADATA_KEYS = [
   "document_id",
   "filename",
@@ -127,6 +149,7 @@ function normalizeDocument(document) {
 const initialConversation = readStoredConversation();
 
 export default function App() {
+  const [auth, setAuth] = useState(initialAuth);
   const [messages, setMessages] = useState(
     () => initialConversation?.messages ?? [],
   );
@@ -145,6 +168,21 @@ export default function App() {
       document: normalizeDocument(document),
     });
   }, [conversationId, document, messages]);
+
+  function handleAuthenticated(result) {
+    setAccessToken(result.access_token);
+    setAuth(result);
+    globalThis.localStorage?.setItem(AUTH_STORAGE_KEY, JSON.stringify(result));
+  }
+
+  function handleLogout() {
+    setAccessToken(null);
+    setAuth(null);
+    setMessages([]);
+    setDocument(null);
+    globalThis.localStorage?.removeItem(AUTH_STORAGE_KEY);
+    globalThis.localStorage?.removeItem(ACTIVE_CONVERSATION_STORAGE_KEY);
+  }
 
   function handleNewChat() {
     const nextConversationId = createConversationId();
@@ -255,10 +293,19 @@ export default function App() {
     }
   }
 
+  if (!auth) {
+    return <AuthScreen onAuthenticated={handleAuthenticated} />;
+  }
+
   return (
     <div className="app-shell">
       <main className="chat-card">
-        <ChatHeader onNewChat={handleNewChat} disabled={loading} />
+        <ChatHeader
+          onNewChat={handleNewChat}
+          onLogout={handleLogout}
+          user={auth.user}
+          disabled={loading}
+        />
 
         <section className="messages-container">
           {messages.length === 0 ? (

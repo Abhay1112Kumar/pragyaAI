@@ -35,6 +35,7 @@ class ChatGraphState(TypedDict):
     query: str
     conversation_id: str
     document_id: str | None
+    owner_id: str | None
     route: Route
     retrieved_context: list[str]
     sources: list[dict]
@@ -56,6 +57,7 @@ class PragyaChatGraph:
         query: str,
         conversation_id: str,
         document_id: str | None = None,
+        owner_id: str | None = None,
     ) -> dict:
         history = self._load_history(conversation_id)
         initial_state: ChatGraphState = {
@@ -63,6 +65,7 @@ class PragyaChatGraph:
             "query": query,
             "conversation_id": conversation_id,
             "document_id": document_id,
+            "owner_id": owner_id,
             "route": "general",
             "retrieved_context": [],
             "sources": [],
@@ -159,6 +162,7 @@ class PragyaChatGraph:
             user_message=user_message,
             route="general",
             document_id=None,
+            owner_id=state.get("owner_id"),
         )
 
         logger.info(
@@ -179,6 +183,7 @@ class PragyaChatGraph:
             query=retrieval_query,
             limit=DEFAULT_RETRIEVAL_COUNT,
             document_id=state["document_id"],
+            owner_id=state.get("owner_id"),
         )
 
         logger.info(
@@ -213,6 +218,7 @@ class PragyaChatGraph:
             user_message=user_message,
             route="document_rag",
             document_id=state.get("document_id"),
+            owner_id=state.get("owner_id"),
         )
 
         logger.info(
@@ -246,6 +252,7 @@ class PragyaChatGraph:
         user_message: str,
         route: Route,
         document_id: str | None,
+        owner_id: str | None,
     ) -> str:
         cache_enabled = (
             self.semantic_cache is not None
@@ -254,6 +261,7 @@ class PragyaChatGraph:
         namespace = self._cache_namespace(
             route=route,
             document_id=document_id,
+            owner_id=owner_id,
         )
 
         if cache_enabled:
@@ -294,6 +302,7 @@ class PragyaChatGraph:
         self,
         route: Route,
         document_id: str | None,
+        owner_id: str | None,
     ) -> str:
         system_prompt_hash = hashlib.sha256(
             SYSTEM_PROMPT.encode("utf-8")
@@ -304,6 +313,7 @@ class PragyaChatGraph:
                 settings.llm_provider,
                 settings.active_model,
                 route,
+                owner_id or "anonymous",
                 document_id or "no-document",
                 system_prompt_hash,
             ]

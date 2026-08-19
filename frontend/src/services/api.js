@@ -6,6 +6,23 @@ const api = axios.create({
 });
 
 const API_BASE_URL = "http://127.0.0.1:8000/api/v1";
+let accessToken = null;
+
+export function setAccessToken(token) {
+  accessToken = token || null;
+
+  if (accessToken) {
+    api.defaults.headers.common.Authorization = `Bearer ${accessToken}`;
+  } else {
+    delete api.defaults.headers.common.Authorization;
+  }
+}
+
+export async function authenticate(mode, username, password) {
+  const endpoint = mode === "register" ? "/auth/register" : "/auth/login";
+  const response = await api.post(endpoint, { username, password });
+  return response.data;
+}
 
 export async function streamMessage(
   message,
@@ -18,6 +35,9 @@ export async function streamMessage(
     headers: {
       "Content-Type": "application/json",
       Accept: "text/event-stream",
+      ...(accessToken
+        ? { Authorization: `Bearer ${accessToken}` }
+        : {}),
     },
     body: JSON.stringify({
       message,

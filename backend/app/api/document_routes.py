@@ -1,5 +1,6 @@
-from fastapi import APIRouter, File, HTTPException, UploadFile
+from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 
+from app.modules.auth.dependencies import get_current_user
 from app.schemas.document_schema import (
     DocumentSearchRequest,
     DocumentSearchResponse,
@@ -23,8 +24,12 @@ router = APIRouter(
 )
 async def upload_document(
     file: UploadFile = File(...),
+    current_user: dict = Depends(get_current_user),
 ) -> DocumentUploadResponse:
-    result = await document_service.save_and_extract_pdf(file)
+    result = await document_service.save_and_extract_pdf(
+        file,
+        owner_id=current_user["id"],
+    )
 
     try:
         chunk_count = vector_store_service.index_documents(
@@ -57,12 +62,14 @@ async def upload_document(
 )
 async def search_documents(
     request: DocumentSearchRequest,
+    current_user: dict = Depends(get_current_user),
 ) -> DocumentSearchResponse:
     try:
         results = vector_store_service.search(
             query=request.query,
             limit=request.limit,
             document_id=request.document_id,
+            owner_id=current_user["id"],
         )
     except Exception as error:
         raise HTTPException(

@@ -9,7 +9,11 @@ from app.core.config import ALLOWED_FILE_TYPES, MAX_FILE_SIZE, UPLOAD_DIR
 
 
 class DocumentService:
-    async def save_and_extract_pdf(self, file: UploadFile) -> dict:
+    async def save_and_extract_pdf(
+        self,
+        file: UploadFile,
+        owner_id: str | None = None,
+    ) -> dict:
         self._validate_file_type(file)
 
         content = await file.read()
@@ -30,6 +34,7 @@ class DocumentService:
                 file_path=file_path,
                 document_id=document_id,
                 original_filename=original_filename,
+                owner_id=owner_id,
             )
         except HTTPException:
             if file_path.exists():
@@ -99,6 +104,7 @@ class DocumentService:
         file_path: Path,
         document_id: str,
         original_filename: str,
+        owner_id: str | None = None,
     ) -> dict:
         reader = PdfReader(str(file_path))
 
@@ -122,6 +128,7 @@ class DocumentService:
                         "filename": original_filename,
                         "page": page_index + 1,
                         "source": str(file_path),
+                        "owner_id": owner_id or "legacy",
                     },
                 )
             )

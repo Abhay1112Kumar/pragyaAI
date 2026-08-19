@@ -68,13 +68,20 @@ class VectorStoreService:
         query: str,
         limit: int = 4,
         document_id: str | None = None,
+        owner_id: str | None = None,
     ) -> list[dict]:
-        search_filter = None
-
+        filters = []
         if document_id:
-            search_filter = {
-                "document_id": document_id,
-            }
+            filters.append({"document_id": document_id})
+        if owner_id:
+            filters.append({"owner_id": owner_id})
+
+        if len(filters) > 1:
+            search_filter = {"$and": filters}
+        elif filters:
+            search_filter = filters[0]
+        else:
+            search_filter = None
 
         candidate_count = max(limit, limit * HYBRID_CANDIDATE_MULTIPLIER)
         semantic_results = self.vector_store.similarity_search_with_score(

@@ -1,11 +1,13 @@
 import json
 from collections.abc import Iterator
 
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.responses import StreamingResponse
 
+from app.modules.auth.dependencies import get_current_user
 from app.modules.chat.schemas import ChatRequest, ChatResponse
 from app.modules.chat.service import chat_service
+from app.modules.mcp.service import mcp_service
 
 
 router = APIRouter(
@@ -14,17 +16,33 @@ router = APIRouter(
 )
 
 
+def _authorize_tool_command(request: ChatRequest, current_user: dict) -> None:
+    if (
+        mcp_service.is_tool_command(request.message)
+        and current_user["role"] != "admin"
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="MCP tool execution requires the admin role.",
+        )
+
+
 @router.post(
     "/chat",
     response_model=ChatResponse,
     status_code=status.HTTP_200_OK,
 )
-def chat(request: ChatRequest) -> ChatResponse:
+def chat(
+    request: ChatRequest,
+    current_user: dict = Depends(get_current_user),
+) -> ChatResponse:
+    _authorize_tool_command(request, current_user)
     try:
         result = chat_service.generate_response(
             message=request.message,
             conversation_id=request.conversation_id,
             document_id=request.document_id,
+            user_id=current_user["id"],
         )
         return ChatResponse(**result)
 
@@ -44,13 +62,19 @@ def _format_sse(event: str, data: dict) -> str:
     response_class=StreamingResponse,
     status_code=status.HTTP_200_OK,
 )
-def stream_chat(request: ChatRequest) -> StreamingResponse:
+def stream_chat(
+    request: ChatRequest,
+    current_user: dict = Depends(get_current_user),
+) -> StreamingResponse:
+    _authorize_tool_command(request, current_user)
+
     def event_stream() -> Iterator[str]:
         try:
             for event, data in chat_service.stream_response(
                 message=request.message,
                 conversation_id=request.conversation_id,
                 document_id=request.document_id,
+                user_id=current_user["id"],
             ):
                 yield _format_sse(event, data)
         except Exception as error:

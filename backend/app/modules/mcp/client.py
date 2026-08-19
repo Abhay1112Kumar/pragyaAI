@@ -9,10 +9,17 @@ class MCPError(RuntimeError):
 
 
 class MCPClient:
-    def __init__(self, name: str, url: str, timeout: float = 15.0) -> None:
+    def __init__(
+        self,
+        name: str,
+        url: str,
+        timeout: float = 15.0,
+        headers: dict[str, str] | None = None,
+    ) -> None:
         self.name = name
         self.url = url
         self.timeout = timeout
+        self.headers = headers or {}
         self._request_ids = itertools.count(1)
 
     def list_tools(self) -> list[dict[str, Any]]:
@@ -44,6 +51,7 @@ class MCPClient:
                 headers={
                     "Accept": "application/json, text/event-stream",
                     "Content-Type": "application/json",
+                    **self.headers,
                 },
                 timeout=self.timeout,
             )

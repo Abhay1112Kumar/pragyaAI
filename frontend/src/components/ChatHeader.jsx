@@ -1,6 +1,11 @@
-import { Bot, MessageSquarePlus } from "lucide-react";
+import { Bot, LogOut, MessageSquarePlus } from "lucide-react";
 
-export default function ChatHeader({ onNewChat, disabled = false }) {
+export default function ChatHeader({
+  onNewChat,
+  onLogout,
+  user,
+  disabled = false,
+}) {
   return (
     <header className="chat-header">
       <div className="header-logo">
@@ -10,6 +15,11 @@ export default function ChatHeader({ onNewChat, disabled = false }) {
       <div className="header-content">
         <h1>PragyaAI</h1>
         <p>Document-aware AI assistant</p>
+      </div>
+
+      <div className="header-user">
+        <span>{user.username}</span>
+        <small>{user.role}</small>
       </div>
 
       <button
@@ -22,6 +32,17 @@ export default function ChatHeader({ onNewChat, disabled = false }) {
       >
         <MessageSquarePlus size={18} />
         <span>New Chat</span>
+      </button>
+
+      <button
+        type="button"
+        className="logout-button"
+        onClick={onLogout}
+        disabled={disabled}
+        title="Sign out"
+        aria-label="Sign out"
+      >
+        <LogOut size={18} />
       </button>
     </header>
   );

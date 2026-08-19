@@ -5,6 +5,7 @@ from unittest.mock import patch
 from fastapi.testclient import TestClient
 
 from app.main import app
+from app.modules.auth.dependencies import get_current_user
 from app.modules.chat.service import ChatService
 from app.modules.chat.streaming import emit_token
 
@@ -92,17 +93,26 @@ class Phase6StreamingTests(unittest.TestCase):
             ]
         )
 
-        with patch(
-            "app.api.chat.chat_service.stream_response",
-            return_value=service_events,
-        ):
-            response = client.post(
-                "/api/v1/chat/stream",
-                json={
-                    "message": "Hello",
-                    "conversation_id": "api-thread",
-                },
-            )
+        app.dependency_overrides[get_current_user] = lambda: {
+            "id": "test-user",
+            "username": "tester",
+            "role": "user",
+            "is_active": True,
+        }
+        try:
+            with patch(
+                "app.api.chat.chat_service.stream_response",
+                return_value=service_events,
+            ):
+                response = client.post(
+                    "/api/v1/chat/stream",
+                    json={
+                        "message": "Hello",
+                        "conversation_id": "api-thread",
+                    },
+                )
+        finally:
+            app.dependency_overrides.pop(get_current_user, None)
 
         self.assertEqual(response.status_code, 200)
         self.assertTrue(

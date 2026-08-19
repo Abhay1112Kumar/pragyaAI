@@ -9,7 +9,17 @@ load_dotenv()
 
 class Settings:
     app_name: str = os.getenv("APP_NAME", "PragyaAI")
-    app_version: str = os.getenv("APP_VERSION", "0.7.0")
+    app_version: str = os.getenv("APP_VERSION", "0.8.0")
+
+    auth_secret_key: str = os.getenv(
+        "AUTH_SECRET_KEY",
+        "change-this-secret-before-production",
+    )
+    auth_token_minutes: int = int(os.getenv("AUTH_TOKEN_MINUTES", "480"))
+    mcp_internal_key: str = os.getenv(
+        "MCP_INTERNAL_KEY",
+        "pragyaai-local-mcp-key",
+    )
 
     llm_provider: str = os.getenv("LLM_PROVIDER", "ollama")
     ollama_model: str = os.getenv("OLLAMA_MODEL", "qwen2.5:3b")
@@ -40,6 +50,10 @@ class Settings:
             for name, url in servers.items()
             if isinstance(name, str) and isinstance(url, str) and url
         }
+
+    @property
+    def workspace_mcp_url(self) -> str:
+        return self.mcp_servers.get("workspace", "")
 
     @property
     def active_model(self) -> str:

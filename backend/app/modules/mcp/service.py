@@ -29,7 +29,15 @@ class MCPService:
     def clients(self) -> dict[str, MCPClient]:
         if self._clients is None:
             self._clients = {
-                name: MCPClient(name=name, url=url)
+                name: MCPClient(
+                    name=name,
+                    url=url,
+                    headers=(
+                        {"X-MCP-Internal-Key": settings.mcp_internal_key}
+                        if url == settings.workspace_mcp_url
+                        else None
+                    ),
+                )
                 for name, url in settings.mcp_servers.items()
             }
         return self._clients
