@@ -9,7 +9,7 @@ streams responses, Phase 7 adds durable memory and caching, Phase 8 adds access
 control, Phase 9 adds operations metrics and RAG evaluation, Phase 10 adds
 a local knowledge graph plus production-readiness safeguards, Phase 11
 connects that graph to RAG and the administration interface, and Phase 12
-prepares a free recruiter-demo deployment.
+prepares a free public-demo deployment.
 
 Phase 12
 --------

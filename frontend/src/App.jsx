@@ -313,7 +313,7 @@ export default function App() {
           disabled={loading}
         />
         <div className="demo-notice">
-          Recruiter demo: accounts, chats, uploaded PDFs, vectors, and graph data
+          Public demo: accounts, chats, uploaded PDFs, vectors, and graph data
           may reset when the free backend restarts.
         </div>
 

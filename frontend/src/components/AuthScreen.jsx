@@ -40,7 +40,7 @@ export default function AuthScreen({ onAuthenticated }) {
     <div className="auth-shell">
       <form className="auth-card" onSubmit={handleSubmit}>
         <div className="demo-notice">
-          Free recruiter demo — stored accounts and documents may reset.
+          Demo environment — stored accounts and documents may reset.
         </div>
 
         <div className="auth-logo">
