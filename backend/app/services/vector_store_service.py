@@ -5,6 +5,7 @@ from uuid import uuid4
 
 from langchain_chroma import Chroma
 from langchain_core.documents import Document
+from langchain_google_genai import GoogleGenerativeAIEmbeddings
 from langchain_ollama import OllamaEmbeddings
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 
@@ -17,13 +18,20 @@ from app.core.config import (
     HYBRID_CANDIDATE_MULTIPLIER,
     HYBRID_RRF_K,
 )
+from app.shared.config import settings
 
 
 class VectorStoreService:
     def __init__(self) -> None:
-        self.embeddings = OllamaEmbeddings(
-            model=EMBEDDING_MODEL,
-        )
+        if settings.embedding_provider.lower() == "gemini":
+            if not settings.gemini_api_key:
+                raise ValueError("GEMINI_API_KEY is required for Gemini embeddings.")
+            self.embeddings = GoogleGenerativeAIEmbeddings(
+                model=settings.embedding_model,
+                google_api_key=settings.gemini_api_key,
+            )
+        else:
+            self.embeddings = OllamaEmbeddings(model=EMBEDDING_MODEL)
 
         self.text_splitter = RecursiveCharacterTextSplitter(
             chunk_size=CHUNK_SIZE,

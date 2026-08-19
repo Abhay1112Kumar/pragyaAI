@@ -1,9 +1,11 @@
+import os
 from pathlib import Path
 
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
-DATA_DIR = BASE_DIR / "data"
+CONFIGURED_DATA_DIR = os.getenv("DATA_DIR")
+DATA_DIR = Path(CONFIGURED_DATA_DIR) if CONFIGURED_DATA_DIR else BASE_DIR / "data"
 UPLOAD_DIR = DATA_DIR / "uploads"
 CHROMA_DIR = DATA_DIR / "chroma"
 MEMORY_DIR = DATA_DIR / "memory"

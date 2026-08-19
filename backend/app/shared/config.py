@@ -9,7 +9,7 @@ load_dotenv()
 
 class Settings:
     app_name: str = os.getenv("APP_NAME", "PragyaAI")
-    app_version: str = os.getenv("APP_VERSION", "1.1.0")
+    app_version: str = os.getenv("APP_VERSION", "1.2.0")
 
     auth_secret_key: str = os.getenv(
         "AUTH_SECRET_KEY",
@@ -28,8 +28,12 @@ class Settings:
         "http://localhost:11434",
     )
 
-    gemini_model: str = os.getenv("GEMINI_MODEL", "gemini-pro")
+    gemini_model: str = os.getenv("GEMINI_MODEL", "gemini-3.5-flash-lite")
     gemini_api_key: str | None = os.getenv("GEMINI_API_KEY")
+    embedding_provider: str = os.getenv("EMBEDDING_PROVIDER", "ollama")
+    embedding_model: str = os.getenv("EMBEDDING_MODEL", "nomic-embed-text")
+    cors_origins: str = os.getenv("CORS_ORIGINS", "")
+    enable_mcp: bool = os.getenv("ENABLE_MCP", "true").lower() == "true"
 
     @property
     def mcp_servers(self) -> dict[str, str]:

@@ -7,8 +7,33 @@ LangGraph orchestration with short-term conversation memory. Phase 4 adds MCP
 tool discovery and execution. Phase 5 adds hybrid document retrieval. Phase 6
 streams responses, Phase 7 adds durable memory and caching, Phase 8 adds access
 control, Phase 9 adds operations metrics and RAG evaluation, Phase 10 adds
-a local knowledge graph plus production-readiness safeguards, and Phase 11
-connects that graph to RAG and the administration interface.
+a local knowledge graph plus production-readiness safeguards, Phase 11
+connects that graph to RAG and the administration interface, and Phase 12
+prepares a free recruiter-demo deployment.
+
+Phase 12
+--------
+
+Phase 12 supports a free Vercel frontend and Render backend. The browser API URL
+comes from `VITE_API_BASE_URL`; backend CORS origins come from
+`CORS_ORIGINS`; and all runtime data can be redirected with `DATA_DIR`.
+Local development remains Ollama-first, while `render.yaml` selects Gemini
+chat and `models/gemini-embedding-001` embeddings.
+
+The free Render service stores SQLite, ChromaDB, uploaded PDFs, cache, and graph
+data under `/tmp/pragyaai`. That storage is intentionally ephemeral and can
+reset after sleeping, restarting, or redeploying. The login and application
+screens display this limitation. The production manifest disables repository
+MCP endpoints with `ENABLE_MCP=false`.
+
+Deployment templates are available at `render.yaml`,
+`backend/deployment.env.example`, `frontend/deployment.env.example`, and
+`frontend/vercel.json`. Add `GEMINI_API_KEY` only through the Render
+dashboard. After Vercel provides its final URL, set Render's `CORS_ORIGINS` to
+that URL. After Render provides its final URL, set Vercel's
+`VITE_API_BASE_URL` to `https://<service>.onrender.com/api/v1`.
+
+Phase 12 raises the application version to `1.2.0`.
 
 Phase 11
 --------
