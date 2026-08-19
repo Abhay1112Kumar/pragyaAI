@@ -139,4 +139,11 @@ export async function runRetrievalEvaluation(payload) {
   return response.data;
 }
 
+export async function queryKnowledgeGraph(query, documentId = "") {
+  const response = await api.get("/documents/graph", {
+    params: { query, document_id: documentId || undefined },
+  });
+  return response.data;
+}
+
 export default api;

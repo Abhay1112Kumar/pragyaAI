@@ -6,8 +6,25 @@ FastAPI application, the frontend is a Vite/React app, and Phase 3 introduces
 LangGraph orchestration with short-term conversation memory. Phase 4 adds MCP
 tool discovery and execution. Phase 5 adds hybrid document retrieval. Phase 6
 streams responses, Phase 7 adds durable memory and caching, Phase 8 adds access
-control, Phase 9 adds operations metrics and RAG evaluation, and Phase 10 adds
-a local knowledge graph plus production-readiness safeguards.
+control, Phase 9 adds operations metrics and RAG evaluation, Phase 10 adds
+a local knowledge graph plus production-readiness safeguards, and Phase 11
+connects that graph to RAG and the administration interface.
+
+Phase 11
+--------
+
+Phase 11 augments document RAG with matching knowledge-graph relationships.
+Hybrid BM25 and vector retrieval remains the primary evidence source; graph
+relationships are appended as structured context before answer generation.
+When no entities match, RAG behaves exactly as before.
+
+The administration dashboard now includes a knowledge-graph explorer. An
+administrator can search an entity across owned documents or restrict the query
+to one document ID, then inspect entity mention counts and weighted
+relationships. The UI uses the authenticated
+`GET /api/v1/documents/graph` endpoint introduced in Phase 10.
+
+Phase 11 raises the application version to `1.1.0`.
 
 Phase 10
 --------

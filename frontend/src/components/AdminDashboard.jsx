@@ -9,6 +9,7 @@ import {
 import { useEffect, useState } from "react";
 
 import { fetchAdminMetrics, runRetrievalEvaluation } from "../services/api";
+import KnowledgeGraphExplorer from "./KnowledgeGraphExplorer";
 
 function MetricCard({ icon: Icon, label, value, detail }) {
   return (
@@ -162,6 +163,8 @@ export default function AdminDashboard() {
           </div>
         </>
       )}
+
+      <KnowledgeGraphExplorer />
 
       <form className="evaluation-panel" onSubmit={handleEvaluate}>
         <div>

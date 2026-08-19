@@ -21,6 +21,7 @@ from app.services.semantic_cache_service import (
     SemanticCacheService,
     semantic_cache_service,
 )
+from app.services.knowledge_graph_service import knowledge_graph_service
 from app.services.vector_store_service import vector_store_service
 from app.shared.config import settings
 
@@ -186,6 +187,21 @@ class PragyaChatGraph:
             owner_id=state.get("owner_id"),
         )
 
+        graph = knowledge_graph_service.query(
+            query=state["query"],
+            owner_id=state.get("owner_id") or "anonymous",
+            document_id=state.get("document_id"),
+            limit=10,
+        )
+        graph_context = []
+        if graph["relations"]:
+            relationships = "\n".join(
+                f"- {item['source']} is related to {item['target']} "
+                f"(weight {item['weight']})"
+                for item in graph["relations"]
+            )
+            graph_context = [f"Knowledge graph relationships:\n{relationships}"]
+
         logger.info(
             "Chat graph retrieved conversation_id=%s document_id=%s chunks=%s",
             state["conversation_id"],
@@ -194,7 +210,7 @@ class PragyaChatGraph:
         )
 
         return {
-            "retrieved_context": self._format_context(chunks),
+            "retrieved_context": [*self._format_context(chunks), *graph_context],
             "sources": self._format_sources(chunks),
         }
 

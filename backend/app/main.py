@@ -13,7 +13,7 @@ from app.api.mcp import router as mcp_router
 app = FastAPI(
     title="PragyaAI API",
     description="Enterprise AI assistant backend",
-    version="1.0.0",
+    version="1.1.0",
 )
 
 app.add_middleware(ProductionHeadersMiddleware)
@@ -35,8 +35,8 @@ async def root() -> dict[str, int | str]:
     return {
         "name": "PragyaAI",
         "status": "running",
-        "version": "1.0.0",
-        "phase": 10,
+        "version": "1.1.0",
+        "phase": 11,
     }
 
 
