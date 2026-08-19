@@ -1019,18 +1019,3 @@ button {
     grid-template-columns: 1fr;
   }
 }
-
-.demo-notice {
-  padding: 8px 14px;
-  border-bottom: 1px solid #78350f;
-  background: #451a03;
-  color: #fde68a;
-  font-size: 12px;
-  line-height: 1.45;
-  text-align: center;
-}
-
-.auth-card .demo-notice {
-  margin: -28px -28px 22px;
-  border-radius: 14px 14px 0 0;
-}

@@ -39,10 +39,6 @@ export default function AuthScreen({ onAuthenticated }) {
   return (
     <div className="auth-shell">
       <form className="auth-card" onSubmit={handleSubmit}>
-        <div className="demo-notice">
-          Demo environment — stored accounts and documents may reset.
-        </div>
-
         <div className="auth-logo">
           <Bot size={28} />
         </div>

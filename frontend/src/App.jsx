@@ -312,11 +312,6 @@ export default function App() {
           user={auth.user}
           disabled={loading}
         />
-        <div className="demo-notice">
-          Public demo: accounts, chats, uploaded PDFs, vectors, and graph data
-          may reset when the free backend restarts.
-        </div>
-
         <section className="messages-container">
           {adminOpen ? (
             <AdminDashboard />
